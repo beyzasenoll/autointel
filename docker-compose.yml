@@ -1,0 +1,21 @@
+services:
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+
+    container_name: autointel-airflow
+
+    command: standalone
+
+    ports:
+      - "8080:8080"
+
+    env_file:
+      - .env
+
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
