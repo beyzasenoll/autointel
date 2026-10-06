@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 type Props = {
   manufacturer: string;
@@ -25,13 +26,10 @@ export default function AskAutoIntel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function askAutoIntel(
-    selectedQuestion?: string,
-  ) {
-    const userQuestion =
-      selectedQuestion ?? question;
+  async function askAutoIntel(selectedQuestion?: string) {
+    const userQuestion = selectedQuestion ?? question;
 
-    if (!userQuestion.trim()) {
+    if (!userQuestion.trim() || loading) {
       return;
     }
 
@@ -51,29 +49,27 @@ Question:
 ${userQuestion}
       `.trim();
 
-      const response = await fetch(
-        "/api/ask",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            question: filterContext,
-          }),
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          question: filterContext,
+        }),
+      });
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data?.error ??
-            "AutoIntel AI request failed.",
+          data?.error ?? "AutoIntel AI request failed.",
+        );
+      }
+
+      if (!data?.answer) {
+        throw new Error(
+          "AutoIntel AI returned an empty response.",
         );
       }
 
@@ -102,13 +98,10 @@ ${userQuestion}
           "0 12px 30px rgba(15, 23, 42, 0.12)",
       }}
     >
-      {/* HEADER */}
-
       <div
         style={{
           display: "flex",
-          justifyContent:
-            "space-between",
+          justifyContent: "space-between",
           gap: 20,
           flexWrap: "wrap",
           marginBottom: 20,
@@ -139,23 +132,20 @@ ${userQuestion}
           <p
             style={{
               color: "#94a3b8",
-              margin:
-                "7px 0 0",
+              margin: "7px 0 0",
               fontSize: 13,
               lineHeight: 1.5,
             }}
           >
-            Ask questions about vehicle
-            safety signals, complaints,
-            components and recalls.
+            Ask questions about vehicle safety signals,
+            complaints, components and recalls.
           </p>
         </div>
 
         <div
           style={{
             alignSelf: "flex-start",
-            padding:
-              "7px 11px",
+            padding: "7px 11px",
             background:
               "rgba(37, 99, 235, 0.14)",
             border:
@@ -170,8 +160,6 @@ ${userQuestion}
         </div>
       </div>
 
-      {/* CURRENT FILTER CONTEXT */}
-
       <div
         style={{
           display: "flex",
@@ -184,19 +172,15 @@ ${userQuestion}
           label="Manufacturer"
           value={manufacturer}
         />
-
         <ContextBadge
           label="Model"
           value={model}
         />
-
         <ContextBadge
           label="Year"
           value={year}
         />
       </div>
-
-      {/* SUGGESTED QUESTIONS */}
 
       <div
         style={{
@@ -206,55 +190,43 @@ ${userQuestion}
           marginBottom: 16,
         }}
       >
-        {suggestedQuestions.map(
-          (item) => (
-            <button
-              key={item}
-              type="button"
-              disabled={loading}
-              onClick={() =>
-                askAutoIntel(item)
-              }
-              style={{
-                border:
-                  "1px solid #334155",
-                background:
-                  "#1e293b",
-                color:
-                  "#cbd5e1",
-                borderRadius: 8,
-                padding:
-                  "8px 11px",
-                cursor:
-                  loading
-                    ? "not-allowed"
-                    : "pointer",
-                fontSize: 12,
-                textAlign: "left",
-              }}
-            >
-              {item}
-            </button>
-          ),
-        )}
+        {suggestedQuestions.map((item) => (
+          <button
+            key={item}
+            type="button"
+            disabled={loading}
+            onClick={() => askAutoIntel(item)}
+            style={{
+              border: "1px solid #334155",
+              background: "#1e293b",
+              color: "#cbd5e1",
+              borderRadius: 8,
+              padding: "8px 11px",
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
+              fontSize: 12,
+              textAlign: "left",
+              opacity: loading ? 0.65 : 1,
+            }}
+          >
+            {item}
+          </button>
+        ))}
       </div>
-
-      {/* QUESTION INPUT */}
 
       <div
         style={{
           display: "flex",
           gap: 10,
-          alignItems:
-            "stretch",
+          alignItems: "stretch",
+          flexWrap: "wrap",
         }}
       >
         <textarea
           value={question}
           onChange={(event) =>
-            setQuestion(
-              event.target.value,
-            )
+            setQuestion(event.target.value)
           }
           onKeyDown={(event) => {
             if (
@@ -264,24 +236,21 @@ ${userQuestion}
               event.preventDefault();
 
               if (!loading) {
-                askAutoIntel();
+                void askAutoIntel();
               }
             }
           }}
           placeholder="Ask a question about the automotive data..."
           rows={3}
           style={{
-            flex: 1,
+            flex: "1 1 520px",
             resize: "vertical",
             minHeight: 86,
-            border:
-              "1px solid #475569",
+            border: "1px solid #475569",
             borderRadius: 10,
-            background:
-              "#0f172a",
+            background: "#0f172a",
             color: "white",
-            padding:
-              "13px 14px",
+            padding: "13px 14px",
             fontSize: 14,
             outline: "none",
             fontFamily: "inherit",
@@ -290,40 +259,29 @@ ${userQuestion}
 
         <button
           type="button"
-          disabled={
-            loading ||
-            !question.trim()
-          }
-          onClick={() =>
-            askAutoIntel()
-          }
+          disabled={loading || !question.trim()}
+          onClick={() => void askAutoIntel()}
           style={{
             minWidth: 120,
+            minHeight: 48,
             border: 0,
             borderRadius: 10,
             background:
-              loading ||
-              !question.trim()
+              loading || !question.trim()
                 ? "#475569"
                 : "#2563eb",
             color: "white",
             fontWeight: 700,
             cursor:
-              loading ||
-              !question.trim()
+              loading || !question.trim()
                 ? "not-allowed"
                 : "pointer",
-            padding:
-              "0 18px",
+            padding: "0 18px",
           }}
         >
-          {loading
-            ? "Analyzing..."
-            : "Analyze"}
+          {loading ? "Analyzing..." : "Analyze"}
         </button>
       </div>
-
-      {/* ERROR */}
 
       {error && (
         <div
@@ -343,14 +301,11 @@ ${userQuestion}
         </div>
       )}
 
-      {/* AI ANSWER */}
-
       {answer && (
         <div
           style={{
             marginTop: 18,
-            background:
-              "#f8fafc",
+            background: "#f8fafc",
             color: "#1e293b",
             borderRadius: 12,
             padding: 20,
@@ -359,9 +314,10 @@ ${userQuestion}
           <div
             style={{
               display: "flex",
-              justifyContent:
-                "space-between",
-              marginBottom: 12,
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              marginBottom: 14,
               gap: 12,
             }}
           >
@@ -373,7 +329,7 @@ ${userQuestion}
                 letterSpacing: 0.5,
               }}
             >
-              AUTOINTERL AI ANALYSIS
+              AUTOINTEL AI ANALYSIS
             </div>
 
             <div
@@ -388,17 +344,109 @@ ${userQuestion}
 
           <div
             style={{
-              whiteSpace: "pre-wrap",
               lineHeight: 1.7,
               fontSize: 14,
             }}
           >
-            {answer}
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => (
+                  <h2
+                    style={{
+                      margin: "18px 0 8px",
+                      fontSize: 20,
+                    }}
+                  >
+                    {children}
+                  </h2>
+                ),
+                h2: ({ children }) => (
+                  <h3
+                    style={{
+                      margin: "18px 0 8px",
+                      fontSize: 17,
+                    }}
+                  >
+                    {children}
+                  </h3>
+                ),
+                h3: ({ children }) => (
+                  <h3
+                    style={{
+                      margin: "18px 0 8px",
+                      fontSize: 16,
+                    }}
+                  >
+                    {children}
+                  </h3>
+                ),
+                p: ({ children }) => (
+                  <p
+                    style={{
+                      margin: "8px 0",
+                    }}
+                  >
+                    {children}
+                  </p>
+                ),
+                ul: ({ children }) => (
+                  <ul
+                    style={{
+                      margin: "8px 0 8px 20px",
+                      padding: 0,
+                    }}
+                  >
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol
+                    style={{
+                      margin: "8px 0 8px 20px",
+                      padding: 0,
+                    }}
+                  >
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => (
+                  <li
+                    style={{
+                      marginBottom: 5,
+                    }}
+                  >
+                    {children}
+                  </li>
+                ),
+                strong: ({ children }) => (
+                  <strong
+                    style={{
+                      fontWeight: 750,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {children}
+                  </strong>
+                ),
+                code: ({ children }) => (
+                  <code
+                    style={{
+                      background: "#e2e8f0",
+                      borderRadius: 5,
+                      padding: "2px 5px",
+                      fontSize: 12,
+                    }}
+                  >
+                    {children}
+                  </code>
+                ),
+              }}
+            >
+              {answer}
+            </ReactMarkdown>
           </div>
         </div>
       )}
-
-      {/* DISCLAIMER */}
 
       <div
         style={{
@@ -408,10 +456,9 @@ ${userQuestion}
           lineHeight: 1.5,
         }}
       >
-        Safety Signal is a heuristic
-        prioritization indicator and should not
-        be interpreted as a predictive risk
-        model.
+        Safety Signal is a heuristic prioritization
+        indicator and should not be interpreted as a
+        predictive risk model.
       </div>
     </section>
   );
